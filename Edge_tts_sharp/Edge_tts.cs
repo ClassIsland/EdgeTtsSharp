@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -26,6 +27,17 @@ public class EdgeTts
     /// 同步模式
     /// </summary>
     public static bool Await = false;
+    
+
+    private static string GenerateSecMsGecToken()
+    {
+        // 来自 https://github.com/rany2/edge-tts/issues/290#issuecomment-2464956570
+        var ticks = DateTime.Now.ToFileTimeUtc();
+        ticks -= ticks % 3_000_000_000;
+        var str = ticks + "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+        return Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(str)));
+    }
+    
     static string GetGUID()
     {
         return Guid.NewGuid().ToString().Replace("-","");
@@ -81,7 +93,7 @@ public class EdgeTts
         var binary = new List<byte>();
         bool IsTurnEnd = false;
 
-        var wss = new Wss("wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4");
+        var wss = new Wss($"wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4&Sec-MS-GEC={GenerateSecMsGecToken()}&Sec-MS-GEC-Version=1-130.0.2849.68");
         wss.OnMessage += (sender, e) =>
         {
             if (e.IsText)
