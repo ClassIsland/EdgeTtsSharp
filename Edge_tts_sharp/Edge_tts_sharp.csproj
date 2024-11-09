@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
 
 	  <!--以下是我们自己添加的-->
 	  <!--版本号，重要性不必多说-->
 	  <Version>1.1.2</Version>
-	  <!--添加该配置，在编译时进行打包-->
-	  <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	  <!--添加该配置才会生成注释文件，默认无注释-->
 	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	  <Title>Edge_tts_sharp</Title>
