@@ -19,6 +19,7 @@
 	  <PackageIcon>MenuLogo.png</PackageIcon>
 	  <RepositoryType>git</RepositoryType>
 	  <UserSecretsId>099b9a5e-4ebd-4672-8871-9986815c01f8</UserSecretsId>
+	  <Configurations>Debug;Release;Debug_MSIX;Release_MSIX</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
