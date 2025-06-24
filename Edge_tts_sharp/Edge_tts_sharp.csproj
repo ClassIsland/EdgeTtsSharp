@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0-windows7.0; net8.0-windows7.0</TargetFrameworks>
+    <TargetFrameworks>net6.0; net8.0</TargetFrameworks>
 
 	  <!--以下是我们自己添加的-->
 	  <!--版本号，重要性不必多说-->
@@ -27,9 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NAudio" Version="2.0.0" />
-    <PackageReference Include="System.Text.Json" Version="4.6.0" />
-    <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="WebSocketSharp-netstandard " Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
