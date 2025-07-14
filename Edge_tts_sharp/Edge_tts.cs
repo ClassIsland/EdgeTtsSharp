@@ -11,7 +11,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using WebSocketSharp;
-using Edge_tts_sharp.Utils;
 using System.Threading;
 
 
@@ -181,37 +180,6 @@ public class EdgeTts
             throw new Exception("保存路径为空，请核对参数后重试.");
         }
         Invoke(option, voice, null);
-    }
-    /// <summary>
-    /// 调用微软Edge接口，文字转语音
-    /// </summary>
-    /// <param name="option">播放参数</param>
-    /// <param name="voice">音源参数</param>
-    public static void PlayText(PlayOption option, eVoice voice)
-    {
-        Invoke(option, voice, (_binary) =>
-        {
-            Audio.PlayToByteAsync(_binary.ToArray(), option.Volume);
-        });
-    }
-    /// <summary>
-    /// 获取一个`AudioPlayer`的对象
-    /// </summary>
-    /// <param name="option">播放参数</param>
-    /// <param name="voice">音源参数</param>
-    /// <returns></returns>
-    public static AudioPlayer GetPlayer(PlayOption option, eVoice voice)
-    {
-        AudioPlayer player = null;
-        Invoke(option, voice, (_binary) =>
-        {
-            player = new AudioPlayer(_binary.ToArray(), option.Volume);
-        });
-        while (player == null) 
-        {
-            Thread.Sleep(10);
-        }
-        return player;
     }
         
     /// <summary>
