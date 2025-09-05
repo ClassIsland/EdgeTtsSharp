@@ -132,7 +132,7 @@ public class EdgeTts
             else if (e.IsBinary)
             {
                 var data = e.RawData;
-                var requestId = Regex.Match(e.Data, @"X-RequestId:(?<requestId>.*?)\r\n").Groups["requestId"].Value;
+                var requestId = Regex.Match(Encoding.UTF8.GetString(data), @"X-RequestId:(?<requestId>.*?)\r\n").Groups["requestId"].Value;
                 if (data[0] == 0x00 && data[1] == 0x67 && data[2] == 0x58)
                 {
                     // Last (empty) audio fragment. 空音频片段，代表音频发送结束
