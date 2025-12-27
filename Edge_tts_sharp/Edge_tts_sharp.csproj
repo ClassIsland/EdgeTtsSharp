@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net6.0; net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
 
 	  <!--以下是我们自己添加的-->
 	  <!--版本号，重要性不必多说-->
 	  <Version>1.1.2</Version>
+      <LangVersion>13</LangVersion>
 	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	  <!--添加该配置才会生成注释文件，默认无注释-->
 	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
