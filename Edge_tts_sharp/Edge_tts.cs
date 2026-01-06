@@ -239,7 +239,6 @@ public class EdgeTts
                 }
             }
 
-            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
             // 循环结束后处理回调和保存
             if (binary.Count > 0)
             {
@@ -258,6 +257,7 @@ public class EdgeTts
         await ws.SendAsync(GetReadOnlyMemoryFromString(ConvertToSsmlWebSocketString(sendRequestId, voice.Locale, voice.Name, option.Rate, ((int)option.Volume * 100), option.Text)), WebSocketMessageType.Text, true, CancellationToken.None);
         // await ws.SendAsync(GetReadOnlyMemoryFromString(""), WebSocketMessageType.Text, true, CancellationToken.None);
         await listenTask;
+        // await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
         ws.Dispose();
     }
     /// <summary>
