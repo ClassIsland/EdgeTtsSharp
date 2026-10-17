@@ -22,7 +22,7 @@ using WebSocketState = System.Net.WebSockets.WebSocketState;
 
 namespace Edge_tts_sharp;
 
-public class EdgeTts
+public partial class EdgeTts
 {
     /// <summary>
     /// 调试模式
@@ -40,7 +40,7 @@ public class EdgeTts
         new()
         {
             { "User-Agent", $"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{ChromiumMajorVersion}.0.0.0 Safari/537.36 Edg/{ChromiumMajorVersion}.0.0.0" },
-            // { "Accept-Encoding", "gzip, deflate, br, zstd" },
+            { "Accept-Encoding", "gzip, deflate, br, zstd" },
             { "Accept-Language", "en-US,en;q=0.9" },
             { "Pragma", "no-cache" },
             { "Cache-Control", "no-cache" },
@@ -124,35 +124,7 @@ public class EdgeTts
         var binary = new List<byte>();
         bool IsTurnEnd = false;
 
-        using var handler = new SocketsHttpHandler();
-        var ws = new ClientWebSocket()
-        {
-            Options =
-            {
-                Cookies = new CookieContainer()
-                {
-                    
-                }
-            }
-        };
-        foreach (var (key, value) in Headers)
-        {
-            ws.Options.SetRequestHeader(key, value);
-        }
-        ws.Options.HttpVersion = HttpVersion.Version11;
-        ws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-
-        var uri = new Uri(
-                      $"wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1" +
-                      $"?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4" +
-                      $"&ConnectionId={sendRequestId}" +
-                  $"&Sec-MS-GEC={GenerateSecMsGecToken()}" +
-                  $"&Sec-MS-GEC-Version=1-{ChromiumVersion}" +
-                  "");
-        // ws.Options.HttpVersion = HttpVersion.Version20;
-        // ws.Options.Proxy = new WebProxy(new Uri("http://127.0.0.1:8888"));
-        ws.Options.Cookies.SetCookies(new Uri("https://speech.platform.bing.com"), $"muid={Guid.NewGuid().ToString().ToUpper().Replace("-", "")};");
-        var tcs = new TaskCompletionSource();
+        var ws = await ConnectWithClockSkewRetryAsync(sendRequestId);
         var listenTask = Task.Run(async () =>
         {
             // 用于接收网络流的底层缓冲区
@@ -252,13 +224,85 @@ public class EdgeTts
                 }
             }
         });
-        await ws.ConnectAsync(uri, CancellationToken.None);
         await ws.SendAsync(GetReadOnlyMemoryFromString(ConvertToAudioFormatWebSocketString(voice.SuggestedCodec)), WebSocketMessageType.Text, true, CancellationToken.None);
         await ws.SendAsync(GetReadOnlyMemoryFromString(ConvertToSsmlWebSocketString(sendRequestId, voice.Locale, voice.Name, option.Rate, ((int)option.Volume * 100), option.Text)), WebSocketMessageType.Text, true, CancellationToken.None);
         // await ws.SendAsync(GetReadOnlyMemoryFromString(""), WebSocketMessageType.Text, true, CancellationToken.None);
         await listenTask;
         // await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, null, CancellationToken.None);
         ws.Dispose();
+    }
+
+    /// <summary>
+    ///     创建已完成握手的 WebSocket 连接。
+    ///     若服务器因本机时钟偏差返回 403，则依据响应 Date 头校正时钟偏移后重试一次。
+    /// </summary>
+    /// <param name="connectionId">连接 ID</param>
+    /// <returns>已连接的 WebSocket</returns>
+    private static async Task<ClientWebSocket> ConnectWithClockSkewRetryAsync(string connectionId)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            var ws = CreateWebSocket();
+            try
+            {
+                await ws.ConnectAsync(BuildWssUri(connectionId), CancellationToken.None);
+                return ws;
+            }
+            catch (Exception exception)
+            {
+                var adjusted = attempt == 0
+                               && exception is System.Net.WebSockets.WebSocketException
+                               && TryAdjustClockSkew(ws.HttpStatusCode, TryGetServerDate(ws.HttpResponseHeaders));
+                ws.Dispose();
+                if (!adjusted)
+                {
+                    throw;
+                }
+            }
+        }
+    }
+
+    private static ClientWebSocket CreateWebSocket()
+    {
+        var ws = new ClientWebSocket
+        {
+            Options =
+            {
+                HttpVersion = HttpVersion.Version11,
+                HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                CollectHttpResponseDetails = true,
+                Cookies = new CookieContainer()
+            }
+        };
+        foreach (var (key, value) in Headers)
+        {
+            ws.Options.SetRequestHeader(key, value);
+        }
+
+        ws.Options.Cookies.SetCookies(
+            new Uri("https://speech.platform.bing.com"),
+            $"muid={Guid.NewGuid().ToString().ToUpper().Replace("-", "")};");
+        return ws;
+    }
+
+    private static Uri BuildWssUri(string connectionId)
+    {
+        return new Uri(
+            $"wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1" +
+            $"?TrustedClientToken={TrustedClientToken}" +
+            $"&ConnectionId={connectionId}" +
+            $"&Sec-MS-GEC={GenerateSecMsGecV2()}" +
+            $"&Sec-MS-GEC-Version=2-{ChromiumVersion}");
+    }
+
+    private static string TryGetServerDate(IReadOnlyDictionary<string, IEnumerable<string>> headers)
+    {
+        if (headers != null && headers.TryGetValue("Date", out var values))
+        {
+            return values.FirstOrDefault();
+        }
+
+        return null;
     }
     /// <summary>
     /// 另存为mp3文件
