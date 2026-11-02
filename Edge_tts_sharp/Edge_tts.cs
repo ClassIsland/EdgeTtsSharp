@@ -297,9 +297,19 @@ public partial class EdgeTts
 
     private static string TryGetServerDate(IReadOnlyDictionary<string, IEnumerable<string>> headers)
     {
-        if (headers != null && headers.TryGetValue("Date", out var values))
+        if (headers == null)
         {
-            return values.FirstOrDefault();
+            return null;
+        }
+
+        foreach (var header in headers)
+        {
+            if (!string.Equals(header.Key, "Date", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            return header.Value?.FirstOrDefault();
         }
 
         return null;

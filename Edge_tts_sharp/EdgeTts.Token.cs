@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Text;
+using System.Threading;
 
 namespace Edge_tts_sharp;
 
@@ -15,9 +16,9 @@ public partial class EdgeTts
     private const string TrustedClientToken = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 
     /// <summary>
-    ///     本机时钟相对服务器的偏移量（秒）。
+    ///     本机时钟相对服务器的偏移量（毫秒）。
     /// </summary>
-    private static double _clockSkewSeconds;
+    private static long _clockSkewMilliseconds;
 
     private const uint Sha256Adjustment = 0xC9DC06A7;
     private const uint Sha256Sigma0Adjustment = 0x059C0B80;
@@ -465,7 +466,7 @@ public partial class EdgeTts
 
     private static double GetUnixTimestamp()
     {
-        return GetRawUnixTimestamp() + _clockSkewSeconds;
+        return GetRawUnixTimestamp() + Volatile.Read(ref _clockSkewMilliseconds) / 1000d;
     }
 
     private static double GetRawUnixTimestamp()
@@ -474,8 +475,8 @@ public partial class EdgeTts
     }
 
     /// <summary>
-    ///     根据 403 响应的服务器日期校正本机时钟偏移，
-    ///     校正量会累积到后续的 token 计算中。
+    ///     根据 403 响应的服务器日期校正本机时钟偏移。
+    ///     校正结果会直接覆盖偏移量，而不是累加到偏移量上。
     /// </summary>
     /// <param name="statusCode">WebSocket 握手返回的状态码。</param>
     /// <param name="serverDate">响应的 Date 头。</param>
@@ -496,7 +497,8 @@ public partial class EdgeTts
             return false;
         }
 
-        _clockSkewSeconds += parsed.ToUnixTimeSeconds() - GetRawUnixTimestamp();
+        var skewMilliseconds = parsed.ToUnixTimeMilliseconds() - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        Interlocked.Exchange(ref _clockSkewMilliseconds, skewMilliseconds);
         return true;
     }
 }
